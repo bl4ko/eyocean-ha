@@ -1,0 +1,208 @@
+substitutions:
+  name: eyocean-rf
+  friendly_name: EYOCEAN Desk Lamp
+
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
+
+esp32:
+  board: esp32-s3-devkitc-1
+  framework:
+    type: esp-idf
+
+logger:
+
+api:
+  encryption:
+    key: !secret api_key
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    ssid: "${name}-fallback"
+    password: !secret ap_password
+
+captive_portal:
+
+spi:
+  clk_pin: GPIO9
+  mosi_pin: GPIO10
+  miso_pin: GPIO11
+
+cc1101:
+  cs_pin: GPIO12
+  frequency: 433.92MHz
+  symbol_rate: 40000
+  modulation_type: ASK/OOK
+
+remote_transmitter:
+  pin: GPIO13
+  carrier_duty_percent: 100%
+  non_blocking: true
+  on_transmit:
+    then:
+      - cc1101.begin_tx
+  on_complete:
+    then:
+      - cc1101.begin_rx
+
+button:
+  - platform: template
+    name: "Power"
+    id: btn_power
+    icon: "mdi:desk-lamp"
+    on_press:
+      - script.execute: send_power
+
+  - platform: template
+    name: "Brightness"
+    id: btn_brightness
+    icon: "mdi:brightness-6"
+    on_press:
+      - script.execute: send_brightness
+
+  - platform: template
+    name: "Color Temperature"
+    id: btn_color_temp
+    icon: "mdi:thermometer"
+    on_press:
+      - script.execute: send_color_temp
+
+  - platform: template
+    name: "Night Light"
+    id: btn_night_light
+    icon: "mdi:weather-night"
+    on_press:
+      - script.execute: send_night_light
+
+  - platform: template
+    name: "Reading Mode"
+    id: btn_reading_mode
+    icon: "mdi:book-open-variant"
+    on_press:
+      - script.execute: send_reading_mode
+
+  - platform: restart
+    name: "Restart"
+
+script:
+  - id: send_power
+    then:
+      - remote_transmitter.transmit_raw:
+          code: !lambda |-
+            static const int32_t T = 250;
+            static const uint32_t ev_code = 0xBAD1511F;
+            std::vector<int32_t> raw;
+            raw.push_back(T);
+            raw.push_back(-25 * T);
+            for (int i = 31; i >= 0; i--) {
+              if ((ev_code >> i) & 1) {
+                raw.push_back(3 * T);
+                raw.push_back(-1 * T);
+              } else {
+                raw.push_back(1 * T);
+                raw.push_back(-3 * T);
+              }
+            }
+            return raw;
+          repeat:
+            times: 8
+            wait_time: 0us
+
+  - id: send_brightness
+    then:
+      - remote_transmitter.transmit_raw:
+          code: !lambda |-
+            static const int32_t T = 250;
+            static const uint32_t ev_code = 0xBAD15B15;
+            std::vector<int32_t> raw;
+            raw.push_back(T);
+            raw.push_back(-25 * T);
+            for (int i = 31; i >= 0; i--) {
+              if ((ev_code >> i) & 1) {
+                raw.push_back(3 * T);
+                raw.push_back(-1 * T);
+              } else {
+                raw.push_back(1 * T);
+                raw.push_back(-3 * T);
+              }
+            }
+            return raw;
+          repeat:
+            times: 8
+            wait_time: 0us
+
+  - id: send_color_temp
+    then:
+      - remote_transmitter.transmit_raw:
+          code: !lambda |-
+            static const int32_t T = 250;
+            static const uint32_t ev_code = 0xBAD15A14;
+            std::vector<int32_t> raw;
+            raw.push_back(T);
+            raw.push_back(-25 * T);
+            for (int i = 31; i >= 0; i--) {
+              if ((ev_code >> i) & 1) {
+                raw.push_back(3 * T);
+                raw.push_back(-1 * T);
+              } else {
+                raw.push_back(1 * T);
+                raw.push_back(-3 * T);
+              }
+            }
+            return raw;
+          repeat:
+            times: 8
+            wait_time: 0us
+
+  - id: send_night_light
+    then:
+      - remote_transmitter.transmit_raw:
+          code: !lambda |-
+            static const int32_t T = 250;
+            static const uint32_t ev_code = 0xBAD1410F;
+            std::vector<int32_t> raw;
+            raw.push_back(T);
+            raw.push_back(-25 * T);
+            for (int i = 31; i >= 0; i--) {
+              if ((ev_code >> i) & 1) {
+                raw.push_back(3 * T);
+                raw.push_back(-1 * T);
+              } else {
+                raw.push_back(1 * T);
+                raw.push_back(-3 * T);
+              }
+            }
+            return raw;
+          repeat:
+            times: 8
+            wait_time: 0us
+
+  - id: send_reading_mode
+    then:
+      - remote_transmitter.transmit_raw:
+          code: !lambda |-
+            static const int32_t T = 250;
+            static const uint32_t ev_code = 0xBAD14907;
+            std::vector<int32_t> raw;
+            raw.push_back(T);
+            raw.push_back(-25 * T);
+            for (int i = 31; i >= 0; i--) {
+              if ((ev_code >> i) & 1) {
+                raw.push_back(3 * T);
+                raw.push_back(-1 * T);
+              } else {
+                raw.push_back(1 * T);
+                raw.push_back(-3 * T);
+              }
+            }
+            return raw;
+          repeat:
+            times: 8
+            wait_time: 0us
