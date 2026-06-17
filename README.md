@@ -43,8 +43,6 @@ GPIO2  (RX)   →   GDO2
 GND           →   GND
 ```
 
-> Contributed by [@KevinLWorthington](https://github.com/KevinLWorthington) ([#1](https://github.com/bl4ko/eyocean-ha/issues/1)).
-
 > [!CAUTION]
 > CC1101 runs on 3.3V only. Do NOT connect to 5V.
 
