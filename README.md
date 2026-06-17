@@ -28,6 +28,23 @@ GPIO14 (RX)   →   GDO2
 GND           →   GND
 ```
 
+### Wiring (ESP32-C3 SuperMini)
+
+```
+ESP32-C3          CC1101
+─────────         ──────
+GPIO4  (SCK)  →   SCK
+GPIO10 (MOSI) →   MOSI
+GPIO3  (MISO) →   MISO
+GPIO7  (CS)   →   CSN
+GPIO1  (TX)   →   GDO0
+GPIO2  (RX)   →   GDO2
+3.3V          →   VCC
+GND           →   GND
+```
+
+> Contributed by [@KevinLWorthington](https://github.com/KevinLWorthington) ([#1](https://github.com/bl4ko/eyocean-ha/issues/1)).
+
 > [!CAUTION]
 > CC1101 runs on 3.3V only. Do NOT connect to 5V.
 
@@ -54,7 +71,7 @@ The EYOCEAN remote uses a **32-bit** frame (not standard 24-bit EV1527). All 32 
 | 2    | Button code  | varies per button                      |
 | 3    | XOR check    | `byte2 XOR 0x4E`                       |
 
-Byte 3 equals `byte2 XOR 0x4E` for all five buttons — this is verified from the data. Whether the prefix is a per-remote address or a constant shared across all EYOCEAN units is unknown (only one remote was tested). The `0x4E` XOR key may be derived from the prefix or may be independent.
+Byte 3 equals `byte2 XOR 0x4E` for all five buttons — this is verified from the data. A second remote (see [#1](https://github.com/bl4ko/eyocean-ha/issues/1)) confirmed that button codes differ per unit, so the prefix is most likely a per-remote address rather than a constant shared across all units. The `0x4E` XOR key may be derived from the prefix or may be independent.
 
 | Button            | Full Code    | Command |
 | ----------------- | ------------ | ------- |
@@ -65,7 +82,7 @@ Byte 3 equals `byte2 XOR 0x4E` for all five buttons — this is verified from th
 | Reading Mode      | `0xBAD14907` | `0x49`  |
 
 > [!WARNING]
-> These codes were captured from a single remote. It is unknown whether all EYOCEAN remotes ship with the same codes or each has a unique address — the lamp has no pairing/learn button, which suggests codes may be shared across units. If the codes above don't work with your lamp, you'll need to capture your own — see [Capturing Your Own Codes](#capturing-your-own-codes). Standard 24-bit EV1527 decoders (Flipper Zero, rtl_433) only show the first 24 bits — you must capture raw data and decode all 32 bits.
+> **Codes are per-unit unique — you will most likely need to capture your own.** A second remote (a Pzloz-branded lamp, see [#1](https://github.com/bl4ko/eyocean-ha/issues/1)) was found to use **different** button codes with the same 32-bit frame structure, confirming each remote ships its own codes rather than a shared factory code. The values above are kept only as a reference example. To capture yours, see [Capturing Your Own Codes](#capturing-your-own-codes). Standard 24-bit EV1527 decoders (Flipper Zero, rtl_433) only show the first 24 bits — you must capture raw data and decode all 32 bits.
 
 ## Installation
 
@@ -117,7 +134,7 @@ The ESP32 connects to your WiFi and exposes entities to Home Assistant. When you
 
 ## Contributing
 
-Found different codes on your EYOCEAN lamp? Open a PR with your codes and model number — this would help confirm whether all units share the same codes or each remote has a unique address.
+Found different codes on your EYOCEAN (or compatible, e.g. Pzloz) lamp? Open a PR or issue with your codes and model number — more data points help map the protocol across units and brands.
 
 ## License
 
