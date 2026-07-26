@@ -2,12 +2,25 @@ substitutions:
   name: eyocean-rf
   friendly_name: EYOCEAN Desk Lamp
 
+  board: esp32-s3-devkitc-1
+  pin_sck: GPIO9
+  pin_mosi: GPIO10
+  pin_miso: GPIO11
+  pin_cs: GPIO12
+  pin_tx: GPIO13
+  pin_rx: GPIO14
+
+  remote_id: "0xBAD1"
+  xor_key: "0x4E"
+  cmd_night_light: "0x41"
+  cmd_timer: "0x4D"
+
 esphome:
   name: ${name}
   friendly_name: ${friendly_name}
 
 esp32:
-  board: esp32-s3-devkitc-1
+  board: ${board}
   framework:
     type: esp-idf
 
@@ -31,18 +44,18 @@ wifi:
 captive_portal:
 
 spi:
-  clk_pin: GPIO9
-  mosi_pin: GPIO10
-  miso_pin: GPIO11
+  clk_pin: ${pin_sck}
+  mosi_pin: ${pin_mosi}
+  miso_pin: ${pin_miso}
 
 cc1101:
-  cs_pin: GPIO12
+  cs_pin: ${pin_cs}
   frequency: 433.92MHz
   symbol_rate: 40000
   modulation_type: ASK/OOK
 
 remote_transmitter:
-  pin: GPIO13
+  pin: ${pin_tx}
   carrier_duty_percent: 100%
   non_blocking: true
   on_transmit:
@@ -52,144 +65,80 @@ remote_transmitter:
     then:
       - cc1101.begin_rx
 
+remote_receiver:
+  pin: ${pin_rx}
+  dump: all
+  filter: 50us
+  idle: 10ms
+
 button:
   - platform: template
     name: "Power"
     id: btn_power
     icon: "mdi:desk-lamp"
     on_press:
-      - script.execute: send_power
+      - script.execute:
+          id: send_cmd
+          cmd: 0x51
 
   - platform: template
     name: "Brightness"
     id: btn_brightness
     icon: "mdi:brightness-6"
     on_press:
-      - script.execute: send_brightness
+      - script.execute:
+          id: send_cmd
+          cmd: 0x5B
 
   - platform: template
     name: "Color Temperature"
     id: btn_color_temp
     icon: "mdi:thermometer"
     on_press:
-      - script.execute: send_color_temp
-
-  - platform: template
-    name: "Night Light"
-    id: btn_night_light
-    icon: "mdi:weather-night"
-    on_press:
-      - script.execute: send_night_light
+      - script.execute:
+          id: send_cmd
+          cmd: 0x5A
 
   - platform: template
     name: "Reading Mode"
     id: btn_reading_mode
     icon: "mdi:book-open-variant"
     on_press:
-      - script.execute: send_reading_mode
+      - script.execute:
+          id: send_cmd
+          cmd: 0x49
+
+  - platform: template
+    name: "Night Light"
+    id: btn_night_light
+    icon: "mdi:weather-night"
+    on_press:
+      - script.execute:
+          id: send_cmd
+          cmd: ${cmd_night_light}
+
+  - platform: template
+    name: "Timer Function"
+    id: btn_timer
+    icon: "mdi:timer-outline"
+    on_press:
+      - script.execute:
+          id: send_cmd
+          cmd: ${cmd_timer}
 
   - platform: restart
     name: "Restart"
 
 script:
-  - id: send_power
+  - id: send_cmd
+    parameters:
+      cmd: int
     then:
       - remote_transmitter.transmit_raw:
           code: !lambda |-
-            static const int32_t T = 250;
-            static const uint32_t ev_code = 0xBAD1511F;
-            std::vector<int32_t> raw;
-            raw.push_back(T);
-            raw.push_back(-25 * T);
-            for (int i = 31; i >= 0; i--) {
-              if ((ev_code >> i) & 1) {
-                raw.push_back(3 * T);
-                raw.push_back(-1 * T);
-              } else {
-                raw.push_back(1 * T);
-                raw.push_back(-3 * T);
-              }
-            }
-            return raw;
-          repeat:
-            times: 8
-            wait_time: 0us
-
-  - id: send_brightness
-    then:
-      - remote_transmitter.transmit_raw:
-          code: !lambda |-
-            static const int32_t T = 250;
-            static const uint32_t ev_code = 0xBAD15B15;
-            std::vector<int32_t> raw;
-            raw.push_back(T);
-            raw.push_back(-25 * T);
-            for (int i = 31; i >= 0; i--) {
-              if ((ev_code >> i) & 1) {
-                raw.push_back(3 * T);
-                raw.push_back(-1 * T);
-              } else {
-                raw.push_back(1 * T);
-                raw.push_back(-3 * T);
-              }
-            }
-            return raw;
-          repeat:
-            times: 8
-            wait_time: 0us
-
-  - id: send_color_temp
-    then:
-      - remote_transmitter.transmit_raw:
-          code: !lambda |-
-            static const int32_t T = 250;
-            static const uint32_t ev_code = 0xBAD15A14;
-            std::vector<int32_t> raw;
-            raw.push_back(T);
-            raw.push_back(-25 * T);
-            for (int i = 31; i >= 0; i--) {
-              if ((ev_code >> i) & 1) {
-                raw.push_back(3 * T);
-                raw.push_back(-1 * T);
-              } else {
-                raw.push_back(1 * T);
-                raw.push_back(-3 * T);
-              }
-            }
-            return raw;
-          repeat:
-            times: 8
-            wait_time: 0us
-
-  - id: send_night_light
-    then:
-      - remote_transmitter.transmit_raw:
-          code: !lambda |-
-            static const int32_t T = 250;
-            static const uint32_t ev_code = 0xBAD1410F;
-            std::vector<int32_t> raw;
-            raw.push_back(T);
-            raw.push_back(-25 * T);
-            for (int i = 31; i >= 0; i--) {
-              if ((ev_code >> i) & 1) {
-                raw.push_back(3 * T);
-                raw.push_back(-1 * T);
-              } else {
-                raw.push_back(1 * T);
-                raw.push_back(-3 * T);
-              }
-            }
-            return raw;
-          repeat:
-            times: 8
-            wait_time: 0us
-
-  - id: send_reading_mode
-    then:
-      - remote_transmitter.transmit_raw:
-          code: !lambda |-
-            static const int32_t T = 250;
-            static const uint32_t ev_code = 0xBAD14907;
+            const int32_t T = 250;
+            const uint8_t c = cmd & 0xFF;
+            const uint32_t ev_code = (uint32_t) ${remote_id} << 16 | c << 8 | (c ^ ${xor_key});
             std::vector<int32_t> raw;
             raw.push_back(T);
             raw.push_back(-25 * T);
