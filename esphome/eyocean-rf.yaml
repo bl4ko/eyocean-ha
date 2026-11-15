@@ -67,9 +67,30 @@ remote_transmitter:
 
 remote_receiver:
   pin: ${pin_rx}
-  dump: all
+  dump: []          # Filter and ignore other protocols
   filter: 50us
   idle: 10ms
+  on_raw:
+    then:
+      - lambda: |-
+          uint32_t code = 0;
+          int bits = 0;
+          for (size_t i = 0; i + 1 < x.size(); i++) {
+            if (x[i] <= 0 || x[i + 1] >= 0) continue;   // needs pair: on, off
+            int32_t on = x[i], off = -x[i + 1];
+            i++;
+            int bit;
+            if (on > 500 && off < 500)      bit = 1;
+            else if (on < 500 && off > 500 && off < 2000) bit = 0;
+            else { code = 0; bits = 0; continue; }       // Präambel/Pause -> Reset
+            code = (code << 1) | bit;
+            if (++bits == 32) {
+              uint8_t cmd = (code >> 8) & 0xFF, chk = code & 0xFF;
+              ESP_LOGI("eyocean", "Code 0x%08X | ID=0x%04X Cmd=0x%02X Chk=0x%02X Key=0x%02X",
+                       code, code >> 16, cmd, chk, cmd ^ chk);
+              code = 0; bits = 0;
+            }
+          }
 
 button:
   - platform: template
